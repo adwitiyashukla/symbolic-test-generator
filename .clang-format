@@ -1,0 +1,6 @@
+BasedOnStyle: Google
+ColumnLimit: 100
+FixNamespaceComments: false
+SortIncludes: true
+DerivePointerAlignment: false
+PointerAlignment: Right

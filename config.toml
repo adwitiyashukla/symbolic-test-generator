@@ -1,0 +1,24 @@
+[search]
+strategy = "coverage"
+max_states = 4000
+max_steps = 2000000
+max_forks_per_path = 2000
+max_call_depth = 64
+max_seconds = 60.0
+seed = 20260908
+
+[input]
+buffer_elements = 8
+random_count = 2000
+
+[limits]
+max_tests = 512
+symbolic_offset_limit = 512
+
+[checks]
+shift_amount = false
+
+[solver]
+independence = true
+cache = true
+conflict_budget = -1

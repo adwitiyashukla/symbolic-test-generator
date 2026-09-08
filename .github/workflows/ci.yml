@@ -1,0 +1,87 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  linux-gcc:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DSYMX_WERROR=ON
+      - name: build
+        run: cmake --build build -j2
+      - name: unit tests
+        run: ctest --test-dir build --output-on-failure
+      - name: generated tests against gcc
+        run: |
+          for target in targets/*.c; do
+            name=$(basename "$target" .c)
+            ./build/symx verify "$target" --out "verify-out/$name" --count 500
+          done
+
+  linux-clang:
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - uses: actions/checkout@v5
+      - name: configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DSYMX_WERROR=ON
+      - name: build
+        run: cmake --build build -j2
+      - name: unit tests
+        run: ctest --test-dir build --output-on-failure
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: configure
+        run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+      - name: build
+        run: cmake --build build -j2
+      - name: unit tests
+        run: ctest --test-dir build --output-on-failure
+      - name: explore every target
+        run: |
+          for target in targets/*.c; do
+            name=$(basename "$target" .c)
+            ./build/symx explore "$target" --out "sanitized-out/$name" --seconds 20
+          done
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - name: build
+        run: cmake --build build -j3
+      - name: unit tests
+        run: ctest --test-dir build --output-on-failure
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: configure
+        run: cmake -B build
+      - name: build
+        run: cmake --build build --config Release
+      - name: unit tests
+        run: ctest --test-dir build -C Release --output-on-failure
+
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: clang-format
+        run: find src tests -name '*.cpp' -o -name '*.h' | xargs clang-format --dry-run --Werror
